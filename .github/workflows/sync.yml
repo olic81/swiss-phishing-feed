@@ -6,7 +6,6 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch: # Erlaubt es Ihnen, den Sync jederzeit manuell per Klick zu starten
 
-# DIESE BERECHTIGUNG SCHEITERT AKTUELL (LÖST DEN EXIT CODE 128)
 permissions:
   contents: write
 
@@ -17,6 +16,8 @@ jobs:
     steps:
     - name: Repository auschecken
       uses: actions/checkout@v4
+      with:
+        persist-credentials: true # Erzwingt, dass die Schreibrechte aktiv bleiben
 
     - name: Python installieren
       uses: actions/setup-python@v5
@@ -31,9 +32,9 @@ jobs:
     - name: Skript ausführen und Liste aktualisieren
       run: python update_list.py
 
-    - name: Änderungen zurück ins Repository pushen
-      run: |
-        git config --global user.name 'Phishing Bot'
-        git config --global user.email 'bot@github.com'
-        git add phishing_list.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Update phishing_list.json" && git push)
+    # DIESER NEUE SCHRITT ERSETZT DEN FEHLERHAFTEN GIT PUSH
+    - name: Änderungen automatisch hochladen
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Update phishing_list.json"
+        file_pattern: 'phishing_list.json'
