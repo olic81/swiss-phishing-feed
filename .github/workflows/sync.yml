@@ -15,6 +15,9 @@ jobs:
     steps:
     - name: Repository auschecken
       uses: actions/checkout@v4
+      with:
+        # fetch-depth: 0 lädt die gesamte Historie, um korrekte Merges zu erlauben
+        fetch-depth: 0
 
     - name: Python installieren
       uses: actions/setup-python@v5
@@ -31,10 +34,18 @@ jobs:
       env:
         TARGET_WORKSPACE: ${{ github.workspace }}
 
+    # DIESER NEUE BLOCK BEREINIGT DIE HISTORIE VOR DEM COMMIT-VERSUCH
+    - name: Git Historie synchronisieren
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git fetch origin main
+        git stash
+        git rebase origin/main
+        git stash pop || true
+
     - name: Änderungen automatisch hochladen
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "Update phishing_list.json"
         file_pattern: 'phishing_list.json'
-        # LÖST DEN NON-FAST-FORWARD FEHLER (INTEGRIERT EXTERNE ÄNDERUNGEN)
-        pull: '--rebase --autostash'
