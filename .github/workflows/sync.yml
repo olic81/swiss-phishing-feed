@@ -2,9 +2,8 @@ name: Wöchentlicher Phishing-Listen Sync
 
 on:
   schedule:
-    # Läuft jeden Sonntag um 00:00 Uhr UTC
-    - cron: '0 0 * * 0'
-  workflow_dispatch: # Erlaubt es Ihnen, den Sync jederzeit manuell per Klick zu starten
+    - cron: '0 0 * * 0' # Jeden Sonntag um 00:00 Uhr
+  workflow_dispatch: # Erlaubt manuellen Start per Klick
 
 permissions:
   contents: write
@@ -16,8 +15,6 @@ jobs:
     steps:
     - name: Repository auschecken
       uses: actions/checkout@v4
-      with:
-        persist-credentials: true # Erzwingt, dass die Schreibrechte aktiv bleiben
 
     - name: Python installieren
       uses: actions/setup-python@v5
@@ -32,9 +29,9 @@ jobs:
     - name: Skript ausführen und Liste aktualisieren
       run: python update_list.py
 
-    # DIESER NEUE SCHRITT ERSETZT DEN FEHLERHAFTEN GIT PUSH
-    - name: Änderungen automatisch hochladen
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "Update phishing_list.json"
-        file_pattern: 'phishing_list.json'
+    # DIESER SCHRITT ERSETZT DAS FEHLERHAFTE 'GIT ADD' UND BEHEBT DEN FEHLER 128 ENDGÜLTIG
+    - name: Datei sicher hochladen
+      uses: mikeal/publish-to-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: 'main'
