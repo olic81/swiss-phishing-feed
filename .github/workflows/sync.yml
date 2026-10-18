@@ -2,8 +2,9 @@ name: Wöchentlicher Phishing-Listen Sync
 
 on:
   schedule:
+    # Läuft jeden Sonntag um 00:00 Uhr UTC
     - cron: '0 0 * * 0'
-  workflow_dispatch:
+  workflow_dispatch: # Erlaubt Ihnen, den Lauf jederzeit manuell zu starten
 
 permissions:
   contents: write
@@ -26,10 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4
 
-    - name: Skript ausführen
+    - name: Skript ausführen (Erzeugt das JSON im richtigen Verzeichnis)
       run: python update_list.py
 
-    - name: Änderungen automatisch hochladen
+    # DIESER GEPRÜFTE BAUSTEIN ERSETZT DEN FEHLERHAFTEN GIT-ADD BLOCK
+    - name: Änderungen automatisch erkennen und hochladen
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "Update phishing_list.json"
