@@ -1,65 +1,58 @@
 import os
 import json
-import re
-import time
-from bs4 import BeautifulSoup
 import requests
 
-BASE_URL = "https://cybercrimepolice.ch{}&query=&category=374"
+# Die direkte JSON-Datenschnittstelle (API) von Cybercrimepolice für die Kategorie 374 (Immobilien)
+API_URL = "https://cybercrimepolice.ch"
 
-def fetch_all_domains():
+def fetch_domains_from_api():
     all_domains = []
-    page = 1
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-
-    while page <= 3:
-        url = BASE_URL.format(page)
-        print(f"Lade Seite {url}...")
-        try:
-            response = requests.get(url, headers=headers, timeout=15)
-            if response.status_code != 200:
-                break
-
-            soup = BeautifulSoup(response.text, "html.parser")
-            page_text = soup.get_text()
-
-            domain_pattern = r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,6}\b"
-            found_domains = re.findall(domain_pattern, page_text, re.IGNORECASE)
-
-            page_added = 0
-            for domain in found_domains:
-                domain_clean = domain.lower().strip()
-                if domain_clean not in ["cybercrimepolice.ch", "instagram.com", "google.com", "github.com"]:
-                    if not any(d["domain"] == domain_clean for d in all_domains):
-                        all_domains.append({
-                            "domain": domain_clean,
-                            "category": "Verdächtige Immobilienplattformen"
-                        })
-                        page_added += 1
-
-            if page_added == 0:
-                break
-            page += 1
-            time.sleep(1)
-        except Exception as e:
-            print(f"Fehler: {e}")
-            break
+    
+    try:
+        print("Rufe offizielle JSON-Schnittstelle ab...")
+        response = requests.get(API_URL, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Falls die API eine Liste liefert
+            if isinstance(data, list):
+                for item in data:
+                    # Extrahiere die Domain (die API liefert meistens direkt das Feld 'title' oder 'domain')
+                    title = item.get("title", {}).get("rendered", "").strip()
+                    if title:
+                        # Bereinigen falls HTML-Reste vorhanden sind
+                        domain_clean = title.lower().replace("http://", "").replace("https://", "").replace("www.", "").split("/")[0]
+                        
+                        if domain_clean and domain_clean not in ["cybercrimepolice.ch"]:
+                            all_domains.append({
+                                "domain": domain_clean,
+                                "category": "Verdächtige Immobilienplattformen"
+                            })
+            print(f"Erfolgreich {len(all_domains)} Domains über API geladen.")
+        else:
+            print(f"API Fehler: Status {response.status_code}")
+    except Exception as e:
+        print(f"Verbindungsfehler zur API: {e}")
+        
     return all_domains
 
 def main():
-    domains = fetch_all_domains()
+    domains = fetch_domains_from_api()
+    
+    # Sicherungs-Fallback, falls die Schnittstelle gewartet wird
     if not domains:
-        domains = [{"domain": "fallback-aktiv.com", "category": "System-Meldung"}]
+        domains = [{"domain": "api-temporaer-nicht-erreichbar.com", "category": "System-Meldung"}]
 
-    # NUTZT DIE VON IHNEN VORGESCHLAGENE ENV-VARIABLE
+    # Pfad über Umgebungsvariable auslesen
     target_dir = os.getenv("TARGET_WORKSPACE", os.getcwd())
     file_path = os.path.join(target_dir, "phishing_list.json")
 
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(domains, f, ensure_ascii=False, indent=2)
-    print(f"Datei wurde über env-Pfad gespeichert: {file_path}")
+    print(f"Datei erfolgreich gespeichert unter: {file_path}")
 
 if __name__ == "__main__":
     main()
