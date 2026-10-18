@@ -6,6 +6,10 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch: # Erlaubt es Ihnen, den Sync jederzeit manuell per Klick zu starten
 
+# DIESE BERECHTIGUNG SCHEITERT AKTUELL (LÖST DEN EXIT CODE 128)
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
