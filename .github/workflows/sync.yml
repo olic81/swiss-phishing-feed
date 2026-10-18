@@ -16,7 +16,6 @@ jobs:
     - name: Repository auschecken
       uses: actions/checkout@v4
       with:
-        # fetch-depth: 0 lädt die gesamte Historie, um korrekte Merges zu erlauben
         fetch-depth: 0
 
     - name: Python installieren
@@ -27,18 +26,18 @@ jobs:
     - name: Bibliotheken installieren
       run: |
         python -m pip install --upgrade pip
-        pip install requests
+        # HIER WURDE BEAUTIFULSOUP4 HINZUGEFÜGT, UM DEN FEHLER ZU BEHEBEN
+        pip install requests beautifulsoup4
 
     - name: Skript ausführen
       run: python update_list.py
       env:
         TARGET_WORKSPACE: ${{ github.workspace }}
 
-    # DIESER NEUE BLOCK BEREINIGT DIE HISTORIE VOR DEM COMMIT-VERSUCH
     - name: Git Historie synchronisieren
       run: |
         git config --global user.name 'github-actions[bot]'
-        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git config --global user.email '41898282+github-actions[bot]@://github.com'
         git fetch origin main
         git stash
         git rebase origin/main
